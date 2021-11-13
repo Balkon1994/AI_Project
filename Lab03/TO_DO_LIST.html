@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<script defer src="todo.js"></script>
+<html lang="pl">
+<head>
+    <link rel="stylesheet" href="style1.css">
+    <meta charset="UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+  <div class="TODO">
+    <h1>TODO List</h1>
+    <table>
+    <tr class="searchRow">
+      <td class="col1"><input id="codeSearch" class="listInput" type="text" placeholder="KOD"></td>
+      <td class="col2"><input id="taskSearch" class="listInput" type="text" placeholder="ZADANIE"></td>
+      <td class="col3"><input id="dateSearch" class="listInput" type="date" placeholder="DATA"></td>
+      <td class="col4">
+        <span id="searchBtn" onclick="filterElements()" class="mainButton">
+          SZUKAJ
+        </span>
+        <span id="clearSearchBtn" onclick="clearSearch()" class="mainButton">ESC</span>
+      </td>
+    </tr>
+  </table>
+    <table id="mainTable">
+    </table>
+    <table>
+      <tr id="addNewRow">
+        <td class="col1"><input id="inputCode" class="listInput" type="text" placeholder="KOD"></td>
+        <td class="col2"><input id="inputTask" class="listInput" type="text" placeholder="ZADANIE"></td>
+        <td class="col3"><input id="inputDate" class="listInput" type="date" placeholder="DATA"></td>
+        <td class="col4">
+          <span id="addButton" onclick="addElement()" class="mainButton">OK</span>
+          <span onclick="clearInput()" class="mainButton">ESC</span>
+        </td>
+      </tr>
+    </table>
+  </div>
