@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Portugal Puzzle</title>
+    <link rel="stylesheet" href="css/leaflet.css"/>
+    <script src="leaflet-1.7.1/leaflet-src.js"></script>
+    <script src="leaflet-1.7.1/leaflet-providers.js"></script>
+    <script src="leaflet-1.7.1/leaflet-image.js"></script>
+    <script src="js/leaflet.js"></script>
+
+
+    <style>
+        #mapId {
+            height: 408px;
+            width: 408px;
+			
+        }
+		
+    </style>
+</head>
+
+<body style="background-color: #ADD8E6;">
+<div id="container" style="display: flex; background-color: #003399;">
+    <div id="mapContainer" style="flex: 10%">
+        <div id="mapId" style="float: left "></div>
+    </div>
+    <div id="jigsawContainer" style="flex: 40%; padding-left:10px; padding-right:10px; background-color:green; text-align:center">
+        <div id="jigsaw" style="height: 408px; width: 408px; ">
+        </div>
+    </div>
+    <div id="piecesContainer" style="height: 408px; width: 408px; 
+	padding-left:30px; flex: 40%;border: solid black; position: relative; 
+	background-image: url('Sandeman2.png'); background-repeat: no-repeat;
+
+  background-size: 100% 100%;">
+    </div>
+</div>
+<div id="buttons" style=" justify-content: center; padding:10px;
+  align-items: center; display: flex; background-color: #003399;">
+	<button id="getLocation" onclick="getLocation()" style="border-radius: 25px;  padding:10px;">Get Location</button>
+	<button id="getPuzzle" style="border-radius: 25px;  padding:10px;">Get Puzzle</button>
+	<button id="resetPuzzle" onclick="resetPuzzle()" style="border-radius: 25px;  padding:10px;">Reset Puzz</button>
+</div>
+<div id="positionInfo" style="background-color:red;">
+    <h3>Latitude: <span id="latitude"></span><br>
+    Longitude: <span id="longitude"></span><br></h3>
+</div>
+
+
+<script>
+
+    function createJigsaw() {
+        let jigsawContainer = document.querySelector("#jigsaw")
+        for (let i = 0; i < 16; i++) {
+            jigsawContainer.insertAdjacentHTML('beforeend', 
+			`<div class="drag-target empty jigsaw"   style=" float: left; height: 100px; width: 100px; border: 1px solid black"></div>`);
+        }
+    }
+
+    function createPieces() {
+        let piecesContainer = document.querySelector("#piecesContainer")
+        for (let i = 0; i < 16; i++) {
+            piecesContainer.insertAdjacentHTML('beforeend', `<canvas id="lmap${i}" width="100" 
+			height="100" data-order ="" class="item draggable " draggable="true" 
+			style="border:none;"></canvas>`);
+        }
+        let canvasPieces = document.querySelectorAll("#piecesContainer canvas")
+        canvasPieces.forEach((canvas) => {
+            let leftPos = Math.floor(Math.random() * 290) + "px";
+            let topPos = Math.floor(Math.random() * 290) + "px";
+            canvas.style.position = "absolute"
+            canvas.style.top = topPos
+            canvas.style.left = leftPos
+        })
+    }
+
+    function resetPuzzle() {
+        let jigsawPieces = document.querySelectorAll("#jigsaw div")
+        jigsawPieces.forEach((piece) => {
+            if (piece.firstChild) {
+                piece.removeChild(piece.firstChild)
+                piece.classList.toggle("empty")
+            }
+        })
+
+        let jigsawPieces2 = document.querySelectorAll("#piecesContainer canvas")
+        jigsawPieces2.forEach((piece) => {
+            if (piece) {
+                piece.remove()
+            }
+        })
+    }
+
+
+    function getLocation() {
+        if (!navigator.geolocation) {
+            alert("Geolocation not available.");
+        }
+        myMap.removeLayer(marker)
+        navigator.geolocation.getCurrentPosition((position) => {
+            xCor = position.coords.latitude;
+            yCor = position.coords.longitude;
+            document.getElementById("latitude").innerText = xCor;
+            document.getElementById("longitude").innerText = yCor;
+            myMap.panTo([xCor, yCor])
+            marker = L.marker([xCor, yCor]);
+            myMap.addLayer(marker);
+        }, (positionError) => {
+            console.error(positionError);
+        }, {
+            enableHighAccuracy: false
+        });
+    }
+
+    function isSolved() {
+        let list = document.querySelectorAll(".jigsaw");
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].classList.contains("empty")) {
+                return false;
+            }
+        }
+
+        for (let i = 0; i < list.length; i++) {
+            let dataOrder = list[i].firstChild.getAttribute("data-order")
+            if (!(dataOrder == i)) {
+                console.log("SOLVED --WRONG")
+                checkPermissionForNotification(false);
+                return false;
+            }
+        }
+        console.log("SOLVED CORRECT")
+        checkPermissionForNotification(true);
+    }
+
+    function createPuzzle() {
+        createPieces()
+        myMap.removeLayer(marker);
+        let canvas = document.querySelector("canvas");
+        let context = canvas.getContext("2d");
+        let imageObj = new Image();
+        imageObj.src = myMap;
+        context.drawImage(imageObj, 10, 10)
+
+        leafletImage(myMap, function (err, canvas) {
+            let lmap;
+            let rasterContext;
+            let rows = 4;
+            let col = 4;
+            let step = 100;
+            let edgeHor = 0;
+            let piece = 0;
+            for (let i = 0; i < col; i++) {
+                let edgeVer = 0;
+                for (let j = 0; j < rows; j++) {
+                    lmap = document.getElementById(`lmap${piece}`);
+                    rasterContext = lmap.getContext("2d");
+                    rasterContext.drawImage(canvas, edgeVer, 
+					edgeHor, step, step, 0, 0, step, step);
+                    lmap.setAttribute("data-order", `${piece}`)
+                    edgeVer += step
+                    piece++
+                }
+                edgeHor += step
+            }
+        });
+
+        myMap.addLayer(marker);
+        let items2 = document.querySelectorAll(".item")
+
+        for (let item of items2) {
+            item.addEventListener("dragstart", function (event) {
+                before = this.parentElement
+                event.dataTransfer.setData("text/plain", this.id)
+            });
+
+            item.addEventListener("dragend", function () {
+                if (before !== this.parentElement) {
+                    before.classList.toggle("empty")
+                    this.style.position = ""
+                    this.style.top = ""
+                    this.style.left = ""
+                }
+                isSolved()
+            });
+        }
+    }
+
+    createJigsaw()
+
+    let before;
+    let xCor = 38.707
+    let yCor = -9.13
+    let marker = L.marker([xCor, yCor]);
+    let myMap = L.map('mapId').setView([xCor, yCor], 13);
+
+    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 18,
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: 'pk.eyJ1IjoiZGF3aWR6dXQiLCJhIjoiY2tpYnMzZDU0MGQ1cDJycGV3Mm9wNGV4YyJ9.cpMFsNQVlPtHcyxxj6LioA'
+    }).addTo(myMap);
+
+    myMap.addLayer(marker)
+
+
+
+    let targets = document.querySelectorAll(".drag-target");
+    for (let target of targets) {
+        target.addEventListener("dragover", function (event) {
+            const isEmpty = this.classList.contains("empty")
+            if (isEmpty) {
+                event.preventDefault();
+            }
+        });
+        target.addEventListener("drop", function (event) {
+            event.preventDefault();
+            let myElement = document.querySelector("#" + event.dataTransfer.getData('text/plain'));
+            this.appendChild(myElement)
+            this.classList.toggle("empty")
+        }, false);
+    }
+
+    let getPuzzleButton = document.getElementById("getPuzzle");
+    getPuzzleButton.addEventListener("click", createPuzzle);
+
+
+    function checkPermissionForNotification(result) {
+        if (Notification.permission === 'granted') {
+            showNotification(result);
+        } else {
+            Notification.requestPermission()
+                .then(function () {
+                    if (Notification.permission === 'granted') {
+                        showNotification(result);
+                    }
+                })
+        }
+    }
+
+    function showNotification(result) {
+        let title = "MAP PUZZLE";
+        let message;
+        if (result) {
+            message = 'Congratulations. You solved the puzzle.'
+        } else {
+            message = 'I am sorry. You failed to solve the puzzle.'
+        }
+        let options = {
+            body: message,
+        }
+        let n = new Notification(title, options);
+        setTimeout(n.close.bind(n), 3000);
+    }
+
+</script>
+</body>
